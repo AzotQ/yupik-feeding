@@ -90,6 +90,7 @@
     </label>
     &nbsp;
     <button id="apply-filter">Применить</button>
+    <button id="export-csv">Экспорт CSV</button>
 </div>
 
 <div id="leaderboard">
@@ -266,7 +267,32 @@
         }
     }
 
+    // CSV export logic
+    function exportToCsv() {
+        const rows = [];
+        // Заголовок
+        rows.push([ '№', 'Кошелёк', 'Отправлено гречи', 'Сумма ЮМ для отправки' ]);
+        // Данные из DOM
+        document.querySelectorAll('.leaderboard-item').forEach(row=>{
+            const cols = row.querySelectorAll('div');
+            const rank = cols[0].textContent.trim();
+            const wallet = cols[1].textContent.trim();
+            const sent  = cols[2].textContent.trim().replace(/,/g, '');
+            const yubm  = (parseFloat(sent) * 20).toFixed(3);
+            rows.push([ rank, wallet, sent, yubm ]);
+        });
+
+        const csvContent = rows.map(r=>r.join(',')).join('\r\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `grecha_export_${Date.now()}.csv`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+    }
+
     document.getElementById('apply-filter').addEventListener('click', renderBoard);
+    document.getElementById('export-csv').addEventListener('click', exportToCsv);
     window.addEventListener('DOMContentLoaded', renderBoard);
 </script>
 </body>
