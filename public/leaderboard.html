@@ -108,7 +108,7 @@
     const BATCH        = 200;
     const MIN_INTERVAL = 5 * 60 * 1000;  // 5 минут
 
-    // Коэффициенты по группам
+    // Group coefficients
     const GROUPS = [
         'common','uncommon','rare','epic','legendary',
         '4th generation','3 generations','3rd generation','2nd generation','1st generation','0th generation','0 generation'
@@ -233,11 +233,11 @@
                             if (found) counts[found]++;
                         });
 
-                        // Подсчитываем итоговую сумму с коэффициентами
+                        // Calculate the total amount with coefficients
                         const totalScore = Object.entries(counts)
                             .reduce((sum, [g, c]) => sum + (COEFFS[g] || 0) * c, 0);
 
-                        // Рисуем блок деталей
+                        // Drawing a block of parts
                         details = document.createElement('div');
                         details.className = 'nft-details';
                         details.style.padding = '0 5px 5px 25px';
