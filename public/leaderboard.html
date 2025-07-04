@@ -293,6 +293,11 @@
             rows.push([ rank, wallet, sentCsv, yubmCsv ]);
         });
 
+        // Summary line
+        const sumSentCsv = sumSent.toFixed(3).replace(/\./g, ',');
+        const sumYubmCsv = sumYubm.toFixed(3).replace(/\./g, ',');
+        rows.push([ '', 'Итого', sumSentCsv, sumYubmCsv ]);
+
         const csvContent = rows.map(r=>r.join(';')).join('\r\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
