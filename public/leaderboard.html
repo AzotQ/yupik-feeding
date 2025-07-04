@@ -75,20 +75,27 @@
             margin:5px 0 0;
             padding-left:20px;
         }
+
+        @media (max-width: 480px) {
+            div#filter-controls {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 5px;
+            }
+        }
     </style>
 </head>
 <body>
 <h1>GRECHA на feed_yupiks.near</h1>
 
 <div id="filter-controls" style="margin:20px; text-align:center;">
-    <label>С:
+    <label>с:
         <input type="datetime-local" id="since-input" value="2025-07-03T13:50" />
     </label>
-    &nbsp;
-    <label>По:
+    <label>по:
         <input type="datetime-local" id="until-input" value="2025-07-05T23:59" />
     </label>
-    &nbsp;
     <button id="apply-filter">Применить</button>
     <button id="export-csv">Экспорт CSV</button>
 </div>
@@ -270,19 +277,23 @@
     // CSV export logic
     function exportToCsv() {
         const rows = [];
-        // Заголовок
+        // Header
         rows.push([ '№', 'Кошелёк', 'Отправлено гречи', 'Сумма ЮМ для отправки' ]);
-        // Данные из DOM
+        // Data from DOM
         document.querySelectorAll('.leaderboard-item').forEach(row=>{
             const cols = row.querySelectorAll('div');
             const rank = cols[0].textContent.trim();
             const wallet = cols[1].textContent.trim();
-            const sent  = cols[2].textContent.trim().replace(/,/g, '');
-            const yubm  = (parseFloat(sent) * 20).toFixed(3);
-            rows.push([ rank, wallet, sent, yubm ]);
+            // source value from col-3
+            const sentRaw = parseFloat(cols[2].textContent.trim().replace(/,/g, '')) || 0;
+            const sentCsv = (sentRaw / 1000).toFixed(3).replace(/\./g, ',');
+            // calculate YUM, then divide by 1,000.
+            const yubmRaw = sentRaw * 20;
+            const yubmCsv = (yubmRaw / 1000).toFixed(3).replace(/\./g, ',');
+            rows.push([ rank, wallet, sentCsv, yubmCsv ]);
         });
 
-        const csvContent = rows.map(r=>r.join(',')).join('\r\n');
+        const csvContent = rows.map(r=>r.join(';')).join('\r\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
