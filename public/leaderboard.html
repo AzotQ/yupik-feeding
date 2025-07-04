@@ -297,7 +297,7 @@
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `grecha_export_${Date.now()}.csv`;
+        link.download = `yupik_feeding_${Date.now()}.csv`;
         link.click();
         URL.revokeObjectURL(link.href);
     }
