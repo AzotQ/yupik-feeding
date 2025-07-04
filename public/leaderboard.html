@@ -89,13 +89,15 @@
 <body>
 <h1>GRECHA на feed_yupiks.near</h1>
 
-<div id="filter-controls" style="margin:20px; text-align:center;">
-    <label>с:
+<div id="controls">
+    <label>С:
         <input type="datetime-local" id="since-input" value="2025-07-03T13:50" />
     </label>
-    <label>по:
+    &nbsp;
+    <label>По:
         <input type="datetime-local" id="until-input" value="2025-07-05T23:59" />
     </label>
+    &nbsp;
     <button id="apply-filter">Применить</button>
     <button id="export-csv">Экспорт CSV</button>
 </div>
@@ -110,31 +112,21 @@
 </div>
 
 <script>
-    const API_PATH     = '/api/nft-yupik-checker';
+    const API_PATH     = '/api/grecha';
     const WALLET_ID    = 'feed_yupiks.near';
     const SYMBOL       = 'GRECHA';
     const BATCH        = 200;
-    const MIN_INTERVAL = 5 * 60 * 1000;  // 5 минут
+    const MIN_INTERVAL = 5 * 60 * 1000;
 
-    // Group coefficients
     const GROUPS = [
         'common','uncommon','rare','epic','legendary',
-        '4th generation','3 generations','3rd generation','2nd generation','1st generation','0th generation','0 generation'
-    ].sort((a, b) => b.length - a.length);
-
+        '4th generation','3 generations','3rd generation',
+        '2nd generation','1st generation','0 generation'
+    ].sort((a,b)=>b.length-a.length);
     const COEFFS = {
-        common: 0.5,
-        uncommon: 1,
-        rare: 1.5,
-        epic: 2,
-        legendary: 2.5,
-        '4th generation': 3,
-        '3 generations': 3.5,
-        '3rd generation': 3.5,
-        '2nd generation': 4,
-        '1st generation': 4.5,
-        '0th generation': 5,
-        '0 generation': 5
+        common:0.5, uncommon:1, rare:1.5, epic:2, legendary:2.5,
+        '4th generation':3, '3 generations':3.5,'3rd generation':3.5,
+        '2nd generation':4,'1st generation':4.5,'0 generation':5
     };
 
     let lastFetchTime = 0;
@@ -151,16 +143,13 @@
 
     async function fetchAll() {
         let all = [];
-        for (let skip = 0; ; skip += BATCH) {
-            const url = `${API_PATH}`
-                + `?wallet_id=${encodeURIComponent(WALLET_ID)}`
-                + `&symbol=${encodeURIComponent(SYMBOL)}`
-                + `&limit=${BATCH}`
-                + `&skip=${skip}`;
+        for (let skip=0;; skip+=BATCH) {
+            const url = `${API_PATH}?wallet_id=${encodeURIComponent(WALLET_ID)}`
+                + `&symbol=${encodeURIComponent(SYMBOL)}&limit=${BATCH}&skip=${skip}`;
             const resp = await fetch(url);
             if (!resp.ok) throw new Error(`API ${resp.status}`);
             const { transfers } = await resp.json();
-            if (!Array.isArray(transfers) || transfers.length === 0) break;
+            if (!Array.isArray(transfers) || transfers.length===0) break;
             all.push(...transfers);
             if (transfers.length < BATCH) break;
         }
@@ -179,25 +168,25 @@
         try {
             let data = await fetchAll();
             data = data.filter(tx => {
-                const txMs = Number(tx.timestamp_nanosec) / 1e6;
-                return txMs >= sinceMs && txMs <= untilMs;
+                const txMs = Number(tx.timestamp_nanosec)/1e6;
+                return txMs>=sinceMs && txMs<=untilMs;
             });
 
             const stats = {};
             data.forEach(tx => {
-                const wallet = tx.from;
-                const txMs = Number(tx.timestamp_nanosec) / 1e6;
-                const amount = parseFloat(tx.amount) / 1000 || 0;
-                if (!stats[wallet]) stats[wallet] = { total: 0, firstMs: txMs };
-                stats[wallet].total += amount;
-                if (txMs < stats[wallet].firstMs) stats[wallet].firstMs = txMs;
+                const wallet=tx.from;
+                const txMs=Number(tx.timestamp_nanosec)/1e6;
+                const amount=parseFloat(tx.amount)/1000||0;
+                if(!stats[wallet]) stats[wallet]={total:0,firstMs:txMs};
+                stats[wallet].total+=amount;
+                if(txMs<stats[wallet].firstMs) stats[wallet].firstMs=txMs;
             });
 
             const sorted = Object.entries(stats)
-                .map(([wallet, { total, firstMs }]) => ({ wallet, total, firstMs }))
-                .sort((a, b) => a.firstMs - b.firstMs);
+                .map(([wallet,{total,firstMs}])=>({wallet,total,firstMs}))
+                .sort((a,b)=>a.firstMs-b.firstMs);
 
-            if (sorted.length === 0) {
+            if(!sorted.length){
                 container.innerHTML = `
             <div class="error">
               Нет переводов в период<br>
@@ -206,93 +195,89 @@
                 return;
             }
 
-            sorted.forEach((item, i) => {
+            sorted.forEach((item,i)=>{
                 const row = document.createElement('div');
                 row.className = 'leaderboard-item';
                 row.innerHTML = `
-            <div class="col-1">${i + 1}</div>
+            <div class="col-1">${i+1}</div>
             <div class="col-2">${item.wallet}</div>
-            <div class="col-3">${item.total.toLocaleString(undefined, {
-                    minimumFractionDigits: 3,
-                    maximumFractionDigits: 3
+            <div class="col-3">${item.total.toLocaleString(undefined,{
+                    minimumFractionDigits:3, maximumFractionDigits:3
                 })}</div>`;
                 row.dataset.wallet = item.wallet;
                 container.appendChild(row);
 
-                row.addEventListener('click', async () => {
+                row.addEventListener('click', async ()=>{
                     let details = row.nextElementSibling;
-                    if (details && details.classList.contains('nft-details')) {
-                        details.style.display = details.style.display === 'none' ? '' : 'none';
+                    if(details && details.classList.contains('nft-details')){
+                        details.style.display = details.style.display==='none'?'':'none';
                         return;
                     }
-                    try {
+                    try{
                         const resp = await fetch(
                             `${API_PATH}?owner_id=${encodeURIComponent(item.wallet)}&contract_address=darai.mintbase1.near`
                         );
                         const data = await resp.json();
-                        const tokens = Array.isArray(data.nfts) ? data.nfts : [];
+                        const tokens = Array.isArray(data.nfts)?data.nfts:[];
 
-                        // Группируем и считаем
                         const counts = {};
-                        GROUPS.forEach(g => counts[g] = 0);
-                        tokens.forEach(token => {
-                            const title = (token.metadata?.title || '').toLowerCase();
-                            const found = GROUPS.find(g => title.includes(g));
-                            if (found) counts[found]++;
+                        GROUPS.forEach(g=>counts[g]=0);
+                        tokens.forEach(token=>{
+                            const title=(token.metadata?.title||'').toLowerCase();
+                            const found = GROUPS.find(g=>title.includes(g));
+                            if(found) counts[found]++;
                         });
 
-                        // Calculate the total amount with coefficients
                         const totalScore = Object.entries(counts)
-                            .reduce((sum, [g, c]) => sum + (COEFFS[g] || 0) * c, 0);
+                            .reduce((sum,[g,c])=>sum + (COEFFS[g]||0)*c,0);
 
-                        // Drawing a block of parts
                         details = document.createElement('div');
                         details.className = 'nft-details';
                         details.style.padding = '0 5px 5px 25px';
                         details.innerHTML = `
-                <strong>Юпики на кошельке (Максимальная сумма для кормления: ${totalScore.toLocaleString(undefined, {
-                            minimumFractionDigits: 1,
-                            maximumFractionDigits: 2
+                <strong>NFT по группам (сумма: ${totalScore.toLocaleString(undefined,{
+                            minimumFractionDigits:1, maximumFractionDigits:2
                         })}):</strong>
                 <ul>
                   ${Object.entries(counts)
-                            .filter(([_,c]) => c > 0)
-                            .map(([g, c]) =>
+                            .filter(([_,c])=>c>0)
+                            .map(([g,c])=>
                                 `<li>${g}: ${c} (×${COEFFS[g]})</li>`
                             ).join('')}
                 </ul>`;
-
                         row.insertAdjacentElement('afterend', details);
-                    } catch (err) {
-                        console.error(err);
+                    }catch(e){
+                        console.error(e);
                     }
                 });
             });
-        } catch (err) {
+        }catch(err){
             container.innerHTML = `<div class="error">Ошибка: ${err.message}</div>`;
             console.error(err);
         }
     }
 
-    // CSV export logic
+    // Export to CSV with summary line
     function exportToCsv() {
         const rows = [];
-        // Header
+        // Headline
         rows.push([ '№', 'Кошелёк', 'Отправлено гречи', 'Сумма ЮМ для отправки' ]);
+        let sumSent = 0;
+        let sumYubm = 0;
         // Data from DOM
         document.querySelectorAll('.leaderboard-item').forEach(row=>{
             const cols = row.querySelectorAll('div');
             const rank = cols[0].textContent.trim();
             const wallet = cols[1].textContent.trim();
-            // source value from col-3
             const sentRaw = parseFloat(cols[2].textContent.trim().replace(/,/g, '')) || 0;
-            const sentCsv = (sentRaw / 1000).toFixed(3).replace(/\./g, ',');
-            // calculate YUM, then divide by 1,000.
-            const yubmRaw = sentRaw * 20;
-            const yubmCsv = (yubmRaw / 1000).toFixed(3).replace(/\./g, ',');
+            const sentVal = sentRaw / 1000;
+            const yubmVal = (sentRaw * 20) / 1000;
+            sumSent += sentVal;
+            sumYubm += yubmVal;
+            const sentCsv = sentVal.toFixed(3).replace(/\./g, ',');
+            const yubmCsv = yubmVal.toFixed(3).replace(/\./g, ',');
             rows.push([ rank, wallet, sentCsv, yubmCsv ]);
         });
-
         // Summary line
         const sumSentCsv = sumSent.toFixed(3).replace(/\./g, ',');
         const sumYubmCsv = sumYubm.toFixed(3).replace(/\./g, ',');
@@ -302,7 +287,7 @@
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `yupik_feeding_${Date.now()}.csv`;
+        link.download = `grecha_export_${Date.now()}.csv`;
         link.click();
         URL.revokeObjectURL(link.href);
     }
