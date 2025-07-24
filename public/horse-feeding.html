@@ -121,12 +121,12 @@
     const MIN_INTERVAL = 0.05 * 60 * 1000; //3sec
 
     const GROUPS = [
-        'Golden Horse','Persian Horse (uncommon)','Persian Unicorn','Honorary Unicorn (Level 2)'
+        'golden horse','persian horse','persian unicorn','honorary unicorn'
     ].sort((a,b)=>b.length-a.length);
     const COEFFS = {
         common:0.5, uncommon:1, rare:1.5, epic:2, legendary:2.5,
-        'Golden Horse':3, 'Persian Horse (uncommon)':3.5,'Persian Unicorn':3.5,
-        'Honorary Unicorn (Level 2)':4
+        'golden horse':3, 'persian horse':3.5,'persian unicorn':3.5,
+        'honorary unicorn':4
     };
 
     let lastFetchTime = 0;
