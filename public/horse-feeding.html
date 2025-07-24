@@ -235,9 +235,9 @@
                         details.className = 'nft-details';
                         details.style.padding = '0 5px 5px 25px';
                         details.innerHTML = `
-                <strong>NFT по группам (сумма: ${totalScore.toLocaleString(undefined,{
+                <strong>Кони на кошельке (max объём: ${totalScore.toLocaleString(undefined,{
                             minimumFractionDigits:1, maximumFractionDigits:2
-                        })}):</strong>
+                        })} RNBW):</strong>
                 <ul>
                   ${Object.entries(counts)
                             .filter(([_,c])=>c>0)
