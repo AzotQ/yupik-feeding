@@ -291,7 +291,7 @@
         // Add a summary line
         const totalSentCsv = sumSent.toFixed(3).replace(/\./g, ',');
         const totalYumCsv = sumYum.toFixed(3).replace(/\./g, ',');
-        rows.push([ '', 'Итого', totalSentCsv, totalYumCsv ]);
+        rows.push([ '', 'Total', totalSentCsv, totalYumCsv ]);
 
         const csvContent = rows.map(r=>r.join(';')).join('\r\n');
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
