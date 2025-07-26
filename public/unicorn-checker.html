@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Кормление Единорогов</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width:600px;
+            margin:40px auto;
+            background-image:url("/public/bg1.jpg");
+            background-attachment:fixed;
+            background-position:center;
+        }
+        h1 {
+            text-align:center;
+            color:ivory;
+            text-shadow:4px 4px 5px #9541AC;
+        }
+        h4.subtitle {
+            text-align: center;
+            margin: -20px auto 20px;
+            color: ivory;
+            text-shadow: 0px 0px 7px #000;
+            font-family: "Space Mono", monospace;
+            font-weight: 700;
+            font-style: normal;
+            font-size: 19px;
+            display: inline-flex;
+            justify-content: center;
+            width: 100%;
+        }
+        .copy-address {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        .copy-address:after {
+            content: '';
+            display: inline-flex;
+            align-items: center;
+            position: relative;
+            top: 1px;
+            width: 20px;
+            height: 20px;
+            background-image: url('data:image/svg+xml,<!--%3Fxml version="1.0" encoding="UTF-8"%3F--><!-- The Best Svg Icon site in the world: iconSvg.co, Visit us! https://iconsvg.co --><svg id="svg" fill="%23ffffff" stroke="%23ffffff" width="200" height="200" version="1.1" viewBox="144 144 512 512" xmlns="http://www.w3.org/2000/svg"><g id="IconSvg_bgCarrier" stroke-width="0"></g><g id="IconSvg_tracerCarrier" stroke-linecap="round" stroke-linejoin="round" stroke="%23CCCCCC" stroke-width="0"><path xmlns="http://www.w3.org/2000/svg" d="m578.43 211.07h-293.89c-6.2969 0-10.496 4.1992-10.496 10.496v41.984h-52.48c-6.2969 0-10.496 4.1992-10.496 10.496v304.39c0 6.2969 4.1992 10.496 10.496 10.496h295.99c6.2969 0 10.496-4.1992 10.496-10.496v-45.133l50.379-0.003906c6.2969 0 10.496-4.1992 10.496-10.496v-301.23c0-6.2969-4.1953-10.496-10.496-10.496zm-71.371 356.86h-275v-283.39h51.43 1.0508 222.52zm60.875-55.629h-39.887l0.003906-238.26c0-6.2969-4.1992-10.496-10.496-10.496h-222.52v-31.488h272.9z"></path></g><g id="IconSvg_iconCarrier"><path xmlns="http://www.w3.org/2000/svg" d="m578.43 211.07h-293.89c-6.2969 0-10.496 4.1992-10.496 10.496v41.984h-52.48c-6.2969 0-10.496 4.1992-10.496 10.496v304.39c0 6.2969 4.1992 10.496 10.496 10.496h295.99c6.2969 0 10.496-4.1992 10.496-10.496v-45.133l50.379-0.003906c6.2969 0 10.496-4.1992 10.496-10.496v-301.23c0-6.2969-4.1953-10.496-10.496-10.496zm-71.371 356.86h-275v-283.39h51.43 1.0508 222.52zm60.875-55.629h-39.887l0.003906-238.26c0-6.2969-4.1992-10.496-10.496-10.496h-222.52v-31.488h272.9z"></path></g></svg>');
+            background-size: cover;
+        }
+        #custom-alert {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 1.5rem;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        #custom-alert-text {
+            background: #333;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.7);
+            margin: auto 30px;
+            text-align: center;
+        }
+
+        #leaderboard {
+            display:flex;
+            flex-direction:column;
+            margin:0 5px;
+            background:rgba(120,103,197,0.8);
+        }
+        .leaderboard-header, .leaderboard-item {
+            display:flex;
+            justify-content:space-between;
+            padding:7px;
+            box-shadow:0 1px 0 rgba(0,0,0,0.3);
+        }
+        .leaderboard-header {
+            position:sticky;
+            top:0;
+            background:#bb37fc;
+            font-weight:700;
+            font-size:18px;
+        }
+        .col-1 {
+            width:10%;
+        }
+        .col-2 {
+            width:70%;
+            text-align:left;
+            font-family:monospace;
+            overflow:hidden;
+            text-overflow:ellipsis;
+        }
+        .col-3 {
+            width:20%;
+            text-align:right;
+        }
+        .leaderboard-item .col-1, .leaderboard-item .col-3 {
+            font-size:17px;
+        }
+        .leaderboard-item .col-2 {
+            font-weight:700;
+            font-size:16px;
+            cursor: pointer;
+        }
+        .nft-details {
+            background: #9932ccd6;
+            padding: 10px 10px 20px 20px !important;
+        }
+        .nft-details > strong {
+            color: gainsboro;
+        }
+        .error {
+            color:ivory;
+            text-align:center;
+            padding:10px;
+        }
+        .nft-details ul {
+            margin:5px 0 0;
+            padding-left:20px;
+        }
+        div#controls {
+            text-align: center;
+            margin: 0 0 5px;
+        }
+
+        @media (max-width: 480px) {
+            div#controls {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+<h1>Кормление единорогов</h1>
+<h4 class="subtitle">GRECHA на&nbsp;<div class="copy-address">feed_yupiks.near</div></h4>
+
+<div id="custom-alert">
+    <div id="custom-alert-text"></div>
+</div>
+
+<div id="controls">
+    <label>С:
+        <input type="datetime-local" id="since-input" />
+    </label>
+    <label>По:
+        <input type="datetime-local" id="until-input" />
+    </label>
+    <button id="apply-filter">Применить</button>
+    <button id="export-csv">Экспорт CSV</button>
+</div>
+
+<div id="leaderboard">
+    <div class="leaderboard-header">
+        <div class="col-1">№</div>
+        <div class="col-2">Кошелек</div>
+        <div class="col-3">Сумма</div>
+    </div>
+    <div id="items"></div>
+</div>
+
+<script>
+    const API_PATH     = '/api/grecha';
+    const WALLET_ID    = 'feed_yupiks.near';
+    const SYMBOL       = 'GRECHA';
+    const BATCH        = 200;
+    const MIN_INTERVAL = 0.05 * 60 * 1000; //3sec
+
+    const GROUPS = [
+        'old unicorn',
+        'old unicorn (useless) - grandma',
+        'young unicorn',
+        'beautiful unicorn',
+        'mutated unicorn',
+        'alien unicorn',
+        'honorary unicorn',
+        'space - unicorn',
+        'white pegasus',
+        'golden pegasus',
+        'victory unicorn',
+        'purple pegasus',
+        'fiery pegasus',
+        'snow pegasus',
+        'black pegasus'
+    ].sort((a,b)=>b.length-a.length);
+    const COEFFS = {
+        'old unicorn':1,
+        'old unicorn (useless) - grandma':2,
+        'young unicorn':3,
+        'beautiful unicorn':4,
+        'mutated unicorn':4,
+        'alien unicorn':4,
+        'honorary unicorn':5,
+        'space - unicorn':5,
+        'white pegasus':5,
+        'golden pegasus':5,
+        'victory unicorn':5,
+        'purple pegasus':5,
+        'fiery pegasus':5,
+        'snow pegasus':5,
+        'black pegasus':5
+    };
+
+    let lastFetchTime = 0;
+
+    function setTodayRange() {
+        const now = new Date();
+        const year  = now.getFullYear();
+        const month = String(now.getMonth()+1).padStart(2,'0');
+        const day   = String(now.getDate()).padStart(2,'0');
+        const todayDate = `${year}-${month}-${day}`;
+        document.getElementById('since-input').value = `${todayDate}T00:00`;
+        document.getElementById('until-input').value = `${todayDate}T23:59`;
+    }
+
+    function getFilterRange() {
+        const sinceStr = document.getElementById('since-input').value;
+        const untilStr = document.getElementById('until-input').value;
+        return {
+            sinceStr, untilStr,
+            sinceMs: new Date(sinceStr).getTime(),
+            untilMs: new Date(untilStr).getTime()
+        };
+    }
+
+    async function fetchAll() {
+        let all = [];
+        for (let skip=0;; skip+=BATCH) {
+            const url = `${API_PATH}?wallet_id=${encodeURIComponent(WALLET_ID)}`
+                + `&symbol=${encodeURIComponent(SYMBOL)}&limit=${BATCH}&skip=${skip}`;
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error(`API ${resp.status}`);
+            const { transfers } = await resp.json();
+            if (!Array.isArray(transfers) || transfers.length===0) break;
+            all.push(...transfers);
+            if (transfers.length < BATCH) break;
+        }
+        return all;
+    }
+
+    async function renderBoard() {
+        const now = Date.now();
+        if (now - lastFetchTime < MIN_INTERVAL) return;
+        lastFetchTime = now;
+
+        const { sinceStr, untilStr, sinceMs, untilMs } = getFilterRange();
+        const container = document.getElementById('items');
+        container.innerHTML = '';
+
+        try {
+            let data = await fetchAll();
+            data = data.filter(tx => {
+                const txMs = Number(tx.timestamp_nanosec)/1e6;
+                return txMs>=sinceMs && txMs<=untilMs;
+            });
+
+            const stats = {};
+            data.forEach(tx => {
+                const wallet=tx.from;
+                const txMs=Number(tx.timestamp_nanosec)/1e6;
+                const amount=parseFloat(tx.amount)/1000||0;
+                if(!stats[wallet]) stats[wallet]={total:0,firstMs:txMs};
+                stats[wallet].total+=amount;
+                if(txMs<stats[wallet].firstMs) stats[wallet].firstMs=txMs;
+            });
+
+            const sorted = Object.entries(stats)
+                .map(([wallet,{total,firstMs}])=>({wallet,total,firstMs}))
+                .sort((a,b)=>a.firstMs-b.firstMs);
+
+            if(!sorted.length){
+                container.innerHTML = `
+            <div class="error">
+              Нет переводов в период<br>
+              ${sinceStr.replace('T',' ')} — ${untilStr.replace('T',' ')}
+            </div>`;
+                return;
+            }
+
+            sorted.forEach((item,i)=>{
+                const row = document.createElement('div');
+                row.className = 'leaderboard-item';
+                row.innerHTML = `
+            <div class="col-1">${i+1}</div>
+            <div class="col-2">${item.wallet}</div>
+            <div class="col-3">${item.total.toLocaleString(undefined,{
+                    minimumFractionDigits:3, maximumFractionDigits:3
+                })}</div>`;
+                row.dataset.wallet = item.wallet;
+                container.appendChild(row);
+
+                row.addEventListener('click', async ()=>{
+                    let details = row.nextElementSibling;
+                    if(details && details.classList.contains('nft-details')){
+                        details.style.display = details.style.display==='none'?'':'none';
+                        return;
+                    }
+                    try{
+                        const resp = await fetch(
+                            `${API_PATH}?owner_id=${encodeURIComponent(item.wallet)}&contract_address=yuplandshop.mintbase1.near`
+                        );
+                        const data = await resp.json();
+                        const tokens = Array.isArray(data.nfts)?data.nfts:[];
+
+                        const counts = {};
+                        GROUPS.forEach(g=>counts[g]=0);
+                        tokens.forEach(token=>{
+                            const title=(token.metadata?.title||'').toLowerCase();
+                            const found = GROUPS.find(g=>title.includes(g));
+                            if(found) counts[found]++;
+                        });
+
+                        const totalScore = Object.entries(counts)
+                            .reduce((sum,[g,c])=>sum + (COEFFS[g]||0)*c,0);
+
+                        details = document.createElement('div');
+                        details.className = 'nft-details';
+                        details.style.padding = '0 5px 5px 25px';
+                        details.innerHTML = `
+                <strong>Единороги на кошельке (max объём: ${totalScore.toLocaleString(undefined,{
+                            minimumFractionDigits:1, maximumFractionDigits:2
+                        })} GRECHA):</strong>
+                <ul>
+                  ${Object.entries(counts)
+                            .filter(([_,c])=>c>0)
+                            .map(([g,c])=>
+                                `<li>${g}: ${c} (×${COEFFS[g]})</li>`
+                            ).join('')}
+                </ul>`;
+                        row.insertAdjacentElement('afterend', details);
+                    }catch(e){
+                        console.error(e);
+                    }
+                });
+            });
+        }catch(err){
+            container.innerHTML = `<div class="error">Ошибка: ${err.message}</div>`;
+            console.error(err);
+        }
+    }
+
+    // Export to CSV with summary line
+    function exportToCsv() {
+        const rows = [];
+        rows.push([ '#', 'Wallet', 'Received buckwheat', 'RNBW amount to send' ]);
+
+        let sumSent = 0;
+        let sumYum = 0;
+
+        document.querySelectorAll('.leaderboard-item').forEach(row=>{
+            const cols = row.querySelectorAll('div');
+            const rank = cols[0].textContent.trim();
+            const wallet = cols[1].textContent.trim();
+            const sentRaw = parseFloat(cols[2].textContent.trim().replace(/,/g, '')) || 0;
+            const sentDiv = sentRaw / 1000;
+            const yubmDiv = (sentRaw * 100) / 1000;
+
+            sumSent += sentDiv;
+            sumYum += yubmDiv;
+
+            const sentCsv = sentDiv.toFixed(3).replace(/\./g, ',');
+            const yubmCsv = yubmDiv.toFixed(3).replace(/\./g, ',');
+
+            rows.push([ rank, wallet, sentCsv, yubmCsv ]);
+        });
+
+        // Add a summary line
+        const totalSentCsv = sumSent.toFixed(3).replace(/\./g, ',');
+        const totalYumCsv = sumYum.toFixed(3).replace(/\./g, ',');
+        rows.push([ '', 'Total', totalSentCsv, totalYumCsv ]);
+
+        const csvContent = rows.map(r=>r.join(';')).join('\r\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `yupik_feeding_${Date.now()}.csv`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+    }
+
+    document.getElementById('apply-filter').addEventListener('click', renderBoard);
+    document.getElementById('export-csv').addEventListener('click', exportToCsv);
+
+    window.addEventListener('DOMContentLoaded', () => {
+        setTodayRange();
+        renderBoard();
+    });
+
+    // Copy wallet
+    const copyAddress = document.querySelector('.copy-address');
+    const alertOverlay = document.getElementById('custom-alert');
+    const alertText = document.getElementById('custom-alert-text');
+    let alertTimeout;
+
+    copyAddress.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(copyAddress.textContent.trim());
+            showCustomAlert('Адрес скопирован в буфер обмена!');
+        } catch (err) {
+            fallbackCopyTextToClipboard(copyAddress.textContent.trim());
+        }
+    });
+
+    function fallbackCopyTextToClipboard(text) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) showCustomAlert('Адрес скопирован в буфер обмена!');
+            else showCustomAlert('Не удалось скопировать адрес');
+        } catch (err) {
+            showCustomAlert('Не удалось скопировать адрес');
+        }
+
+        document.body.removeChild(textArea);
+    }
+
+    function showCustomAlert(message) {
+        clearTimeout(alertTimeout);
+        alertText.textContent = message;
+        alertOverlay.style.display = 'flex';
+        // Start the appearance animation
+        requestAnimationFrame(() => {
+            alertOverlay.style.opacity = '1';
+        });
+        // After 1 second, hide it.
+        alertTimeout = setTimeout(() => {
+            alertOverlay.style.opacity = '0';
+            alertOverlay.addEventListener('transitionend', () => {
+                alertOverlay.style.display = 'none';
+            }, { once: true });
+        }, 1000);
+    }
+</script>
+</body>
+</html>
