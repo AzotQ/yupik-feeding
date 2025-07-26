@@ -20,10 +20,11 @@
             text-align:center;
             color:ivory;
             text-shadow:4px 4px 5px #9541AC;
+            margin-bottom: 15px;
         }
         h4.subtitle {
             text-align: center;
-            margin: -20px auto 20px;
+            margin: -20px auto 15px;
             color: ivory;
             text-shadow: 0px 0px 7px #000;
             font-family: "Space Mono", monospace;
@@ -71,6 +72,20 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.7);
             margin: auto 30px;
             text-align: center;
+        }
+
+        .unicorn-checker {
+            margin: 0 auto 10px;
+            display: flex;
+            gap: 3px;
+            align-items: center;
+            justify-content: center;
+        }
+        input#wallet-input {
+            height: 20px;
+        }
+        button#wallet-check {
+            height: 25px;
         }
 
         #leaderboard {
@@ -141,6 +156,38 @@
             margin: 20px auto 10px;
         }
 
+        #wallet-modal {
+            display:none;
+            position:fixed;
+            top:0; left:0;
+            width:100%; height:100%;
+            background:rgba(0,0,0,0.5);
+            justify-content:center;
+            align-items:center;
+            z-index:1000;
+        }
+        #wallet-modal.show {
+            display:flex;
+        }
+        .modal-content {
+            background:#fff;
+            color:#000;
+            padding:30px;
+            border-radius:8px;
+            max-width:90%;
+            max-height:90%;
+            overflow:auto;
+            position:relative;
+        }
+        #wallet-modal-close {
+            position:absolute;
+            top:-4px;
+            right:7px;
+            font-size:40px;
+            cursor:pointer;
+            color:#505050;
+        }
+
         @media (max-width: 480px) {
             div#controls {
                 display: flex;
@@ -157,6 +204,21 @@
 
 <div id="custom-alert">
     <div id="custom-alert-text"></div>
+</div>
+
+<div class="unicorn-checker">
+    <label>
+        <input type="text" id="wallet-input" placeholder="wallet address" />
+    </label>
+    <button id="wallet-check">Объем кормления</button>
+</div>
+
+<!-- Modal window -->
+<div id="wallet-modal">
+    <div class="modal-content">
+        <span id="wallet-modal-close">&times;</span>
+        <div id="wallet-result"></div>
+    </div>
 </div>
 
 <div id="controls">
@@ -179,8 +241,6 @@
 
     <button id="export-csv">Экспорт CSV</button>
 </div>
-
-
 
 <script>
     const API_PATH     = '/api/grecha';
@@ -361,6 +421,53 @@
             console.error(err);
         }
     }
+
+    function showModal(html){
+        const modal=document.getElementById('wallet-modal');
+        document.getElementById('wallet-result').innerHTML=html;
+        modal.classList.add('show');
+    }
+    function hideModal(){
+        document.getElementById('wallet-modal').classList.remove('show');
+    }
+
+    document.getElementById('wallet-check').addEventListener('click', async ()=>{
+        const addr=document.getElementById('wallet-input').value.trim();
+        if(!addr) return showModal('<p>Введите адрес кошелька</p>');
+        try {
+            const resp=await fetch(
+                `${API_PATH}?owner_id=${encodeURIComponent(addr)}&contract_address=yuplandshop.mintbase1.near`
+            );
+            const data=await resp.json();
+            const tokens=Array.isArray(data.nfts)?data.nfts:[];
+
+            const counts={};
+            GROUPS.forEach(g=>counts[g]=0);
+            tokens.forEach(t=>{
+                const title=(t.metadata?.title||'').toLowerCase();
+                const found=GROUPS.find(g=>title.includes(g));
+                if(found) counts[found]++;
+            });
+
+            const totalScore=Object.entries(counts)
+                .reduce((s,[g,c])=>s+(COEFFS[g]||0)*c,0);
+
+            const list = Object.entries(counts)
+                .filter(([_,c])=>c>0)
+                .map(([g,c])=>`<li>${g}: ${c} (×${COEFFS[g]})</li>`)
+                .join('');
+            showModal(`
+                    <strong>Единороги на ${addr} (max GRECHA: ${totalScore.toLocaleString(undefined,{
+                minimumFractionDigits:0,maximumFractionDigits:0
+            })}):</strong>
+                    <ul>${list}</ul>
+                `);
+        } catch(err){
+            console.error(err);
+            showModal('<p>Ошибка при запросе NFT</p>');
+        }
+    });
+    document.getElementById('wallet-modal-close').addEventListener('click', hideModal);
 
     // Export to CSV with summary line
     function exportToCsv() {
