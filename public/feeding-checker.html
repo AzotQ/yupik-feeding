@@ -77,16 +77,19 @@
         .unicorn-checker {
             margin: 0 auto 10px;
             display: flex;
+            flex-direction: column;
             gap: 3px;
             align-items: center;
             justify-content: center;
         }
         input#wallet-input {
-            height: 20px;
+            height: 30px;
+            width: 290px;
         }
         button#unicorn-check,
         button#yupik-check {
-            height: 25px;
+            height: 35px;
+            cursor: pointer;
         }
 
         #leaderboard,
@@ -96,6 +99,11 @@
             margin:0 5px;
             background:rgba(120,103,197,0.8);
             padding: 10px;
+            color: ivory;
+            text-shadow: 0px 0px 1px #000;
+            font-weight: 400;
+            font-style: normal;
+            font-size: 17px;
         }
         .leaderboard-header, .leaderboard-item {
             display:flex;
@@ -213,8 +221,10 @@
     <label>
         <input type="text" id="wallet-input" placeholder="wallet address" />
     </label>
-    <button id="unicorn-check">Объем для единорогов</button>
-    <button id="yupik-check">Объем для юпиков</button>
+    <div class="buttons-wrapper">
+        <button id="unicorn-check">Объем для единорогов</button>
+        <button id="yupik-check">Объем для юпиков</button>
+    </div>
 </div>
 
 <div id="feeding-checker">
