@@ -141,6 +141,14 @@
             margin: 20px auto 10px;
         }
 
+        #wallet-result {
+            background: rgba(153,50,205,0.2);
+            padding: 10px;
+            margin: 10px 5px;
+            border-radius: 4px;
+            color: ivory;
+        }
+
         @media (max-width: 480px) {
             div#controls {
                 display: flex;
@@ -158,6 +166,12 @@
 <div id="custom-alert">
     <div id="custom-alert-text"></div>
 </div>
+
+<label>Ваш кошелек:
+    <input type="text" id="wallet-input" placeholder="например: example.near" />
+</label>
+<button id="wallet-check">Проверить NFT</button>
+<div id="wallet-result"></div>
 
 <div id="controls">
     <label>С:
@@ -361,6 +375,49 @@
             console.error(err);
         }
     }
+
+    document.getElementById('wallet-check').addEventListener('click', async () => {
+        const walletAddr = document.getElementById('wallet-input').value.trim();
+        const out = document.getElementById('wallet-result');
+        out.innerHTML = '';
+        if (!walletAddr) {
+            out.textContent = 'Введите адрес кошелька';
+            return;
+        }
+        try {
+            const resp = await fetch(
+                `${API_PATH}?owner_id=${encodeURIComponent(walletAddr)}&contract_address=yuplandshop.mintbase1.near`
+            );
+            const data = await resp.json();
+            const tokens = Array.isArray(data.nfts)?data.nfts:[];
+
+            const counts = {};
+            GROUPS.forEach(g=>counts[g]=0);
+            tokens.forEach(token => {
+                const title = (token.metadata?.title||'').toLowerCase();
+                const found = GROUPS.find(g => title.includes(g));
+                if (found) counts[found]++;
+            });
+
+            const totalScore = Object.entries(counts)
+                .reduce((sum,[g,c]) => sum + (COEFFS[g]||0)*c, 0);
+
+            out.innerHTML = `
+                <strong>Единороги на ${walletAddr} (max GRECHA: ${totalScore.toLocaleString(undefined,{
+                minimumFractionDigits:1, maximumFractionDigits:2
+            })}):</strong>
+                <ul>
+                  ${Object.entries(counts)
+                .filter(([_,c]) => c>0)
+                .map(([g,c]) =>
+                    `<li>${g}: ${c} (×${COEFFS[g]})</li>`
+                ).join('')}
+                </ul>`;
+        } catch(err) {
+            out.textContent = 'Ошибка при запросе NFT';
+            console.error(err);
+        }
+    });
 
     // Export to CSV with summary line
     function exportToCsv() {
