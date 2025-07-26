@@ -20,10 +20,11 @@
             text-align:center;
             color:ivory;
             text-shadow:4px 4px 5px #9541AC;
+            margin-bottom: 15px;
         }
         h4.subtitle {
             text-align: center;
-            margin: -20px auto 20px;
+            margin: -20px auto 15px;
             color: ivory;
             text-shadow: 0px 0px 7px #000;
             font-family: "Space Mono", monospace;
@@ -71,6 +72,14 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.7);
             margin: auto 30px;
             text-align: center;
+        }
+
+        .unicorn-checker {
+            margin: 0 auto 10px;
+            display: flex;
+            gap: 3px;
+            align-items: center;
+            justify-content: center;
         }
 
         #leaderboard {
@@ -151,11 +160,13 @@
             align-items:center;
             z-index:1000;
         }
-        #wallet-modal.show { display:flex; }
+        #wallet-modal.show {
+            display:flex;
+        }
         .modal-content {
             background:#fff;
             color:#000;
-            padding:20px;
+            padding:30px;
             border-radius:8px;
             max-width:90%;
             max-height:90%;
@@ -164,10 +175,11 @@
         }
         #wallet-modal-close {
             position:absolute;
-            top:10px; right:10px;
-            font-size:24px;
+            top:-4px;
+            right:7px;
+            font-size:40px;
             cursor:pointer;
-            color:#999;
+            color:#505050;
         }
 
         @media (max-width: 480px) {
@@ -188,11 +200,14 @@
     <div id="custom-alert-text"></div>
 </div>
 
-<label>Ваш кошелек:
-    <input type="text" id="wallet-input" placeholder="например: example.near" />
-</label>
-<button id="wallet-check">Проверить NFT</button>
-<!-- Модальное окно -->
+<div class="unicorn-checker">
+    <label>
+        <input type="text" id="wallet-input" placeholder="wallet address" />
+    </label>
+    <button id="wallet-check">Объем кормления</button>
+</div>
+
+<!-- Modal window -->
 <div id="wallet-modal">
     <div class="modal-content">
         <span id="wallet-modal-close">&times;</span>
