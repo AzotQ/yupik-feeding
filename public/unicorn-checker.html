@@ -135,6 +135,12 @@
             margin: 0 0 5px;
         }
 
+        button#export-csv {
+            width: 100px;
+            height: 30px;
+            margin: 20px auto 10px;
+        }
+
         @media (max-width: 480px) {
             div#controls {
                 display: flex;
@@ -161,7 +167,6 @@
         <input type="datetime-local" id="until-input" />
     </label>
     <button id="apply-filter">Применить</button>
-    <button id="export-csv">Экспорт CSV</button>
 </div>
 
 <div id="leaderboard">
@@ -171,7 +176,11 @@
         <div class="col-3">Сумма</div>
     </div>
     <div id="items"></div>
+
+    <button id="export-csv">Экспорт CSV</button>
 </div>
+
+
 
 <script>
     const API_PATH     = '/api/grecha';
