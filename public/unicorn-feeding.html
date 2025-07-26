@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Кормление Коней</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width:600px;
+            margin:40px auto;
+            background-image:url("/public/bg1.jpg");
+            background-attachment:fixed;
+            background-position:center;
+        }
+        h1 {
+            text-align:center;
+            color:ivory;
+            text-shadow:4px 4px 5px #9541AC;
+        }
+        h4 {
+            text-align: center;
+            color: ivory;
+            text-shadow: 4px 4px 5px #9541AC;
+            margin: -15px auto 20px;
+        }
+        #leaderboard {
+            display:flex;
+            flex-direction:column;
+            margin:0 5px;
+            background:rgba(120,103,197,0.8);
+        }
+        .leaderboard-header, .leaderboard-item {
+            display:flex;
+            justify-content:space-between;
+            padding:7px;
+            box-shadow:0 1px 0 rgba(0,0,0,0.3);
+        }
+        .leaderboard-header {
+            position:sticky;
+            top:0;
+            background:#bb37fc;
+            font-weight:700;
+            font-size:18px;
+        }
+        .col-1 {
+            width:10%;
+        }
+        .col-2 {
+            width:70%;
+            text-align:left;
+            font-family:monospace;
+            overflow:hidden;
+            text-overflow:ellipsis;
+        }
+        .col-3 {
+            width:20%;
+            text-align:right;
+        }
+        .leaderboard-item .col-1, .leaderboard-item .col-3 {
+            font-size:17px;
+        }
+        .leaderboard-item .col-2 {
+            font-weight:700;
+            font-size:16px;
+            cursor: pointer;
+        }
+        .nft-details {
+            background: #9932ccd6;
+            padding: 10px 10px 20px 20px !important;
+        }
+        .nft-details > strong {
+            color: gainsboro;
+        }
+        .error {
+            color:ivory;
+            text-align:center;
+            padding:10px;
+        }
+        .nft-details ul {
+            margin:5px 0 0;
+            padding-left:20px;
+        }
+        div#controls {
+            text-align: center;
+            margin: 0 0 5px;
+        }
+
+        @media (max-width: 480px) {
+            div#controls {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+<h1>GRECHA на feed_yupiks.near</h1>
+<h4>Кормление коней</h4>
+
+<div id="controls">
+    <label>С:
+        <input type="datetime-local" id="since-input" />
+    </label>
+    <label>По:
+        <input type="datetime-local" id="until-input" />
+    </label>
+    <button id="apply-filter">Применить</button>
+    <button id="export-csv">Экспорт CSV</button>
+</div>
+
+<div id="leaderboard">
+    <div class="leaderboard-header">
+        <div class="col-1">№</div>
+        <div class="col-2">Кошелек</div>
+        <div class="col-3">Сумма</div>
+    </div>
+    <div id="items"></div>
+</div>
+
+<script>
+    const API_PATH     = '/api/grecha';
+    const WALLET_ID    = 'feed_yupiks.near';
+    const SYMBOL       = 'GRECHA';
+    const BATCH        = 200;
+    const MIN_INTERVAL = 0.05 * 60 * 1000; //3sec
+
+    const GROUPS = [
+        'old unicorn',
+        'old unicorn (useless) - grandma',
+        'young unicorn',
+        'beautiful unicorn',
+        'mutated unicorn',
+        'alien unicorn',
+        'honorary unicorn',
+        'space - unicorn',
+        'white pegasus',
+        'golden pegasus',
+        'victory unicorn',
+        'purple pegasus',
+        'fiery pegasus',
+        'snow pegasus',
+        'black pegasus'
+    ].sort((a,b)=>b.length-a.length);
+    const COEFFS = {
+        'old unicorn':1,
+        'old unicorn (useless) - grandma':2,
+        'young unicorn':3,
+        'beautiful unicorn':4,
+        'mutated unicorn':4,
+        'alien unicorn':4,
+        'honorary unicorn':5,
+        'space - unicorn':5,
+        'white pegasus':5,
+        'golden pegasus':5,
+        'victory unicorn':5,
+        'purple pegasus':5,
+        'fiery pegasus':5,
+        'snow pegasus':5,
+        'black pegasus':5
+    };
+
+    let lastFetchTime = 0;
+
+    function setTodayRange() {
+        const now = new Date();
+        const year  = now.getFullYear();
+        const month = String(now.getMonth()+1).padStart(2,'0');
+        const day   = String(now.getDate()).padStart(2,'0');
+        const todayDate = `${year}-${month}-${day}`;
+        document.getElementById('since-input').value = `${todayDate}T00:00`;
+        document.getElementById('until-input').value = `${todayDate}T23:59`;
+    }
+
+    function getFilterRange() {
+        const sinceStr = document.getElementById('since-input').value;
+        const untilStr = document.getElementById('until-input').value;
+        return {
+            sinceStr, untilStr,
+            sinceMs: new Date(sinceStr).getTime(),
+            untilMs: new Date(untilStr).getTime()
+        };
+    }
+
+    async function fetchAll() {
+        let all = [];
+        for (let skip=0;; skip+=BATCH) {
+            const url = `${API_PATH}?wallet_id=${encodeURIComponent(WALLET_ID)}`
+                + `&symbol=${encodeURIComponent(SYMBOL)}&limit=${BATCH}&skip=${skip}`;
+            const resp = await fetch(url);
+            if (!resp.ok) throw new Error(`API ${resp.status}`);
+            const { transfers } = await resp.json();
+            if (!Array.isArray(transfers) || transfers.length===0) break;
+            all.push(...transfers);
+            if (transfers.length < BATCH) break;
+        }
+        return all;
+    }
+
+    async function renderBoard() {
+        const now = Date.now();
+        if (now - lastFetchTime < MIN_INTERVAL) return;
+        lastFetchTime = now;
+
+        const { sinceStr, untilStr, sinceMs, untilMs } = getFilterRange();
+        const container = document.getElementById('items');
+        container.innerHTML = '';
+
+        try {
+            let data = await fetchAll();
+            data = data.filter(tx => {
+                const txMs = Number(tx.timestamp_nanosec)/1e6;
+                return txMs>=sinceMs && txMs<=untilMs;
+            });
+
+            const stats = {};
+            data.forEach(tx => {
+                const wallet=tx.from;
+                const txMs=Number(tx.timestamp_nanosec)/1e6;
+                const amount=parseFloat(tx.amount)/1000||0;
+                if(!stats[wallet]) stats[wallet]={total:0,firstMs:txMs};
+                stats[wallet].total+=amount;
+                if(txMs<stats[wallet].firstMs) stats[wallet].firstMs=txMs;
+            });
+
+            const sorted = Object.entries(stats)
+                .map(([wallet,{total,firstMs}])=>({wallet,total,firstMs}))
+                .sort((a,b)=>a.firstMs-b.firstMs);
+
+            if(!sorted.length){
+                container.innerHTML = `
+            <div class="error">
+              Нет переводов в период<br>
+              ${sinceStr.replace('T',' ')} — ${untilStr.replace('T',' ')}
+            </div>`;
+                return;
+            }
+
+            sorted.forEach((item,i)=>{
+                const row = document.createElement('div');
+                row.className = 'leaderboard-item';
+                row.innerHTML = `
+            <div class="col-1">${i+1}</div>
+            <div class="col-2">${item.wallet}</div>
+            <div class="col-3">${item.total.toLocaleString(undefined,{
+                    minimumFractionDigits:3, maximumFractionDigits:3
+                })}</div>`;
+                row.dataset.wallet = item.wallet;
+                container.appendChild(row);
+
+                row.addEventListener('click', async ()=>{
+                    let details = row.nextElementSibling;
+                    if(details && details.classList.contains('nft-details')){
+                        details.style.display = details.style.display==='none'?'':'none';
+                        return;
+                    }
+                    try{
+                        const resp = await fetch(
+                            `${API_PATH}?owner_id=${encodeURIComponent(item.wallet)}&contract_address=yuplandshop.mintbase1.near`
+                        );
+                        const data = await resp.json();
+                        const tokens = Array.isArray(data.nfts)?data.nfts:[];
+
+                        const counts = {};
+                        GROUPS.forEach(g=>counts[g]=0);
+                        tokens.forEach(token=>{
+                            const title=(token.metadata?.title||'').toLowerCase();
+                            const found = GROUPS.find(g=>title.includes(g));
+                            if(found) counts[found]++;
+                        });
+
+                        const totalScore = Object.entries(counts)
+                            .reduce((sum,[g,c])=>sum + (COEFFS[g]||0)*c,0);
+
+                        details = document.createElement('div');
+                        details.className = 'nft-details';
+                        details.style.padding = '0 5px 5px 25px';
+                        details.innerHTML = `
+                <strong>Кони на кошельке (max объём: ${totalScore.toLocaleString(undefined,{
+                            minimumFractionDigits:1, maximumFractionDigits:2
+                        })} GRECHA):</strong>
+                <ul>
+                  ${Object.entries(counts)
+                            .filter(([_,c])=>c>0)
+                            .map(([g,c])=>
+                                `<li>${g}: ${c} (×${COEFFS[g]})</li>`
+                            ).join('')}
+                </ul>`;
+                        row.insertAdjacentElement('afterend', details);
+                    }catch(e){
+                        console.error(e);
+                    }
+                });
+            });
+        }catch(err){
+            container.innerHTML = `<div class="error">Ошибка: ${err.message}</div>`;
+            console.error(err);
+        }
+    }
+
+    // Export to CSV with summary line
+    function exportToCsv() {
+        const rows = [];
+        rows.push([ '#', 'Wallet', 'Received buckwheat', 'RNBW amount to send' ]);
+
+        let sumSent = 0;
+        let sumYum = 0;
+
+        document.querySelectorAll('.leaderboard-item').forEach(row=>{
+            const cols = row.querySelectorAll('div');
+            const rank = cols[0].textContent.trim();
+            const wallet = cols[1].textContent.trim();
+            const sentRaw = parseFloat(cols[2].textContent.trim().replace(/,/g, '')) || 0;
+            const sentDiv = sentRaw / 1000;
+            const yubmDiv = (sentRaw * 100) / 1000;
+
+            sumSent += sentDiv;
+            sumYum += yubmDiv;
+
+            const sentCsv = sentDiv.toFixed(3).replace(/\./g, ',');
+            const yubmCsv = yubmDiv.toFixed(3).replace(/\./g, ',');
+
+            rows.push([ rank, wallet, sentCsv, yubmCsv ]);
+        });
+
+        // Add a summary line
+        const totalSentCsv = sumSent.toFixed(3).replace(/\./g, ',');
+        const totalYumCsv = sumYum.toFixed(3).replace(/\./g, ',');
+        rows.push([ '', 'Total', totalSentCsv, totalYumCsv ]);
+
+        const csvContent = rows.map(r=>r.join(';')).join('\r\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `yupik_feeding_${Date.now()}.csv`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+    }
+
+    document.getElementById('apply-filter').addEventListener('click', renderBoard);
+    document.getElementById('export-csv').addEventListener('click', exportToCsv);
+
+    window.addEventListener('DOMContentLoaded', () => {
+        setTodayRange();
+        renderBoard();
+    });
+</script>
+</body>
+</html>
