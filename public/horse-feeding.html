@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <title>Кормление Коней</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -18,12 +21,58 @@
             color:ivory;
             text-shadow:4px 4px 5px #9541AC;
         }
-        h4 {
+        h4.subtitle {
             text-align: center;
+            margin: -20px auto 20px;
             color: ivory;
-            text-shadow: 4px 4px 5px #9541AC;
-            margin: -15px auto 20px;
+            text-shadow: 0px 0px 7px #000;
+            font-family: "Space Mono", monospace;
+            font-weight: 700;
+            font-style: normal;
+            font-size: 19px;
+            display: inline-flex;
+            justify-content: center;
+            width: 100%;
         }
+        .copy-address {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+        .copy-address:after {
+            content: '';
+            display: inline-flex;
+            align-items: center;
+            position: relative;
+            top: 1px;
+            width: 20px;
+            height: 20px;
+            background-image: url('data:image/svg+xml,<!--%3Fxml version="1.0" encoding="UTF-8"%3F--><!-- The Best Svg Icon site in the world: iconSvg.co, Visit us! https://iconsvg.co --><svg id="svg" fill="%23ffffff" stroke="%23ffffff" width="200" height="200" version="1.1" viewBox="144 144 512 512" xmlns="http://www.w3.org/2000/svg"><g id="IconSvg_bgCarrier" stroke-width="0"></g><g id="IconSvg_tracerCarrier" stroke-linecap="round" stroke-linejoin="round" stroke="%23CCCCCC" stroke-width="0"><path xmlns="http://www.w3.org/2000/svg" d="m578.43 211.07h-293.89c-6.2969 0-10.496 4.1992-10.496 10.496v41.984h-52.48c-6.2969 0-10.496 4.1992-10.496 10.496v304.39c0 6.2969 4.1992 10.496 10.496 10.496h295.99c6.2969 0 10.496-4.1992 10.496-10.496v-45.133l50.379-0.003906c6.2969 0 10.496-4.1992 10.496-10.496v-301.23c0-6.2969-4.1953-10.496-10.496-10.496zm-71.371 356.86h-275v-283.39h51.43 1.0508 222.52zm60.875-55.629h-39.887l0.003906-238.26c0-6.2969-4.1992-10.496-10.496-10.496h-222.52v-31.488h272.9z"></path></g><g id="IconSvg_iconCarrier"><path xmlns="http://www.w3.org/2000/svg" d="m578.43 211.07h-293.89c-6.2969 0-10.496 4.1992-10.496 10.496v41.984h-52.48c-6.2969 0-10.496 4.1992-10.496 10.496v304.39c0 6.2969 4.1992 10.496 10.496 10.496h295.99c6.2969 0 10.496-4.1992 10.496-10.496v-45.133l50.379-0.003906c6.2969 0 10.496-4.1992 10.496-10.496v-301.23c0-6.2969-4.1953-10.496-10.496-10.496zm-71.371 356.86h-275v-283.39h51.43 1.0508 222.52zm60.875-55.629h-39.887l0.003906-238.26c0-6.2969-4.1992-10.496-10.496-10.496h-222.52v-31.488h272.9z"></path></g></svg>');
+            background-size: cover;
+        }
+        #custom-alert {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 1.5rem;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        #custom-alert-text {
+            background: #333;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.7);
+            margin: auto 30px;
+            text-align: center;
+        }
+
         #leaderboard {
             display:flex;
             flex-direction:column;
@@ -97,8 +146,12 @@
     </style>
 </head>
 <body>
-<h1>GRECHA на feed_yupiks.near</h1>
-<h4>Кормление коней</h4>
+<h1>Кормление единорогов</h1>
+<h4 class="subtitle">GRECHA на&nbsp;<div class="copy-address">feed_yupiks.near</div></h4>
+
+<div id="custom-alert">
+    <div id="custom-alert-text"></div>
+</div>
 
 <div id="controls">
     <label>С:
@@ -278,7 +331,7 @@
                         details.className = 'nft-details';
                         details.style.padding = '0 5px 5px 25px';
                         details.innerHTML = `
-                <strong>Кони на кошельке (max объём: ${totalScore.toLocaleString(undefined,{
+                <strong>Единороги на кошельке (max объём: ${totalScore.toLocaleString(undefined,{
                             minimumFractionDigits:1, maximumFractionDigits:2
                         })} GRECHA):</strong>
                 <ul>
@@ -346,6 +399,58 @@
         setTodayRange();
         renderBoard();
     });
+
+    // Copy wallet
+    const copyAddress = document.querySelector('.copy-address');
+    const alertOverlay = document.getElementById('custom-alert');
+    const alertText = document.getElementById('custom-alert-text');
+    let alertTimeout;
+
+    copyAddress.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(copyAddress.textContent.trim());
+            showCustomAlert('Адрес скопирован в буфер обмена!');
+        } catch (err) {
+            fallbackCopyTextToClipboard(copyAddress.textContent.trim());
+        }
+    });
+
+    function fallbackCopyTextToClipboard(text) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) showCustomAlert('Адрес скопирован в буфер обмена!');
+            else showCustomAlert('Не удалось скопировать адрес');
+        } catch (err) {
+            showCustomAlert('Не удалось скопировать адрес');
+        }
+
+        document.body.removeChild(textArea);
+    }
+
+    function showCustomAlert(message) {
+        clearTimeout(alertTimeout);
+        alertText.textContent = message;
+        alertOverlay.style.display = 'flex';
+        // Start the appearance animation
+        requestAnimationFrame(() => {
+            alertOverlay.style.opacity = '1';
+        });
+        // After 1 second, hide it.
+        alertTimeout = setTimeout(() => {
+            alertOverlay.style.opacity = '0';
+            alertOverlay.addEventListener('transitionend', () => {
+                alertOverlay.style.display = 'none';
+            }, { once: true });
+        }, 1000);
+    }
 </script>
 </body>
 </html>
