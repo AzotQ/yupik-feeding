@@ -89,11 +89,13 @@
             height: 25px;
         }
 
-        #leaderboard {
+        #leaderboard,
+        #feeding-checker {
             display:flex;
             flex-direction:column;
             margin:0 5px;
             background:rgba(120,103,197,0.8);
+            padding: 10px;
         }
         .leaderboard-header, .leaderboard-item {
             display:flex;
@@ -215,6 +217,10 @@
     <button id="yupik-check">Объем для юпиков</button>
 </div>
 
+<div id="feeding-checker">
+
+</div>
+
 <!-- Modal window -->
 <div id="wallet-modal">
     <div class="modal-content">
@@ -273,7 +279,7 @@
         };
     }*/
 
-    async function fetchAll() {
+    /*async function fetchAll() {
         let all = [];
         for (let skip=0;; skip+=BATCH) {
             const url = `${API_PATH}?wallet_id=${encodeURIComponent(WALLET_ID)}`
@@ -286,7 +292,7 @@
             if (transfers.length < BATCH) break;
         }
         return all;
-    }
+    }*/
 
     /*async function renderBoard() {
         const now = Date.now();
@@ -389,16 +395,14 @@
         }
     }*/
 
-    function showModal(html){
-        const modal=document.getElementById('wallet-modal');
-        document.getElementById('wallet-result').innerHTML=html;
-        modal.classList.add('show');
-    }
-    function hideModal(){
-        document.getElementById('wallet-modal').classList.remove('show');
+    function showResults(html){
+        const modal=document.getElementById('feeding-checker');
+        modal.innerHTML=html;
+        // modal.classList.add('show');
     }
 
     document.getElementById('unicorn-check').addEventListener('click', async ()=>{
+
         const GROUPS = [
             'old unicorn',
             'old unicorn (useless) - grandma',
@@ -435,7 +439,7 @@
         };
 
         const addr=document.getElementById('wallet-input').value.trim();
-        if(!addr) return showModal('<p>Введите адрес кошелька</p>');
+        if(!addr) return showResults('<p>Введите адрес кошелька</p>');
         try {
             const resp=await fetch(
                 `${API_PATH}?owner_id=${encodeURIComponent(addr)}&contract_address=yuplandshop.mintbase1.near`
@@ -458,7 +462,7 @@
                 .filter(([_,c])=>c>0)
                 .map(([g,c])=>`<li>${g}: ${c} (×${COEFFS[g]})</li>`)
                 .join('');
-            showModal(`
+            showResults(`
                     <strong>Единороги на ${addr} (max GRECHA: ${totalScore.toLocaleString(undefined,{
                 minimumFractionDigits:0,maximumFractionDigits:0
             })}):</strong>
@@ -466,7 +470,7 @@
                 `);
         } catch(err){
             console.error(err);
-            showModal('<p>Ошибка при запросе NFT</p>');
+            showResults('<p>Ошибка при запросе NFT</p>');
         }
     });
 
@@ -499,7 +503,7 @@
         };
 
         const addr=document.getElementById('wallet-input').value.trim();
-        if(!addr) return showModal('<p>Введите адрес кошелька</p>');
+        if(!addr) return showResults('<p>Введите адрес кошелька</p>');
         try {
             const resp=await fetch(
                 `${API_PATH}?owner_id=${encodeURIComponent(addr)}&contract_address=darai.mintbase1.near`
@@ -522,19 +526,17 @@
                 .filter(([_,c])=>c>0)
                 .map(([g,c])=>`<li>${g}: ${c} (×${COEFFS[g]})</li>`)
                 .join('');
-            showModal(`
-                    <strong>Единороги на ${addr} (max GRECHA: ${totalScore.toLocaleString(undefined,{
+            showResults(`
+                    <strong>Юпики на ${addr} (max GRECHA: ${totalScore.toLocaleString(undefined,{
                 minimumFractionDigits:0,maximumFractionDigits:0
             })}):</strong>
                     <ul>${list}</ul>
                 `);
         } catch(err){
             console.error(err);
-            showModal('<p>Ошибка при запросе NFT</p>');
+            showResults('<p>Ошибка при запросе NFT</p>');
         }
     });
-
-    document.getElementById('wallet-modal-close').addEventListener('click', hideModal);
 
     /*// Export to CSV with summary line
     function exportToCsv() {
