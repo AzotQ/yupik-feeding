@@ -127,6 +127,9 @@
             border: 1px solid ivory;
             margin: 0 6px 0 0;
         }
+        .leaderboard-item .col-2.green-dot:before {
+            background: #00bf00 !important;
+        }
         .nft-details {
             background: #9932ccd6;
             padding: 10px 10px 20px 20px !important;
@@ -324,6 +327,35 @@
                 })}</div>`;
                 row.dataset.wallet = item.wallet;
                 container.appendChild(row);
+
+                // Получаем DOM-элемент .col-2 для изменения цвета точки
+                const col2 = row.querySelector('.col-2');
+
+                // Сразу запускаем асинхронную проверку лимита
+                (async () => {
+                    try {
+                        const resp = await fetch(
+                            `${API_PATH}?owner_id=${encodeURIComponent(item.wallet)}&contract_address=yuplandshop.mintbase1.near`
+                        );
+                        const data = await resp.json();
+                        const tokens = Array.isArray(data.nfts) ? data.nfts : [];
+                        const counts = {};
+                        GROUPS.forEach(g => counts[g] = 0);
+                        tokens.forEach(token => {
+                            const title = (token.metadata?.title || '').toLowerCase();
+                            const found = GROUPS.find(g => title.includes(g));
+                            if (found) counts[found]++;
+                        });
+                        const totalScore = Object.entries(counts)
+                            .reduce((sum, [g, c]) => sum + (COEFFS[g] || 0) * c, 0);
+
+                        if (item.total > totalScore) {
+                            col2.classList.add('green-dot');
+                        }
+                    } catch (e) {
+                        // В случае ошибки ничего не делаем (оставляем по умолчанию красный)
+                    }
+                })();
 
                 row.addEventListener('click', async ()=>{
                     let details = row.nextElementSibling;
