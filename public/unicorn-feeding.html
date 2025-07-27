@@ -25,7 +25,7 @@
             text-align: center;
             margin: -20px auto 20px;
             color: ivory;
-            text-shadow: 0px 0px 7px #000;
+            text-shadow: 0 0 7px #000;
             font-family: "Space Mono", monospace;
             font-weight: 700;
             font-style: normal;
@@ -328,10 +328,10 @@
                 row.dataset.wallet = item.wallet;
                 container.appendChild(row);
 
-                // Получаем DOM-элемент .col-2 для изменения цвета точки
+                // Get the .col-2 DOM element to change the point color
                 const col2 = row.querySelector('.col-2');
 
-                // Сразу запускаем асинхронную проверку лимита
+                // Run asynchronous limit check immediately
                 (async () => {
                     try {
                         const resp = await fetch(
@@ -353,7 +353,7 @@
                             col2.classList.add('red-dot');
                         }
                     } catch (e) {
-                        // В случае ошибки ничего не делаем (оставляем по умолчанию красный)
+                        // In case of an error, do nothing (leave the default green)
                     }
                 })();
 
