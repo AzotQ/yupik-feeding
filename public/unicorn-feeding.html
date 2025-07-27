@@ -123,12 +123,12 @@
             width: 15px;
             height: 15px;
             border-radius: 50%;
-            background: red;
+            background: #00bf00;
             border: 1px solid ivory;
             margin: 0 6px 0 0;
         }
-        .leaderboard-item .col-2.green-dot:before {
-            background: #00bf00 !important;
+        .leaderboard-item .col-2.red-dot:before {
+            background: red !important;
         }
         .nft-details {
             background: #9932ccd6;
@@ -350,7 +350,7 @@
                             .reduce((sum, [g, c]) => sum + (COEFFS[g] || 0) * c, 0);
 
                         if (item.total > totalScore) {
-                            col2.classList.add('green-dot');
+                            col2.classList.add('red-dot');
                         }
                     } catch (e) {
                         // В случае ошибки ничего не делаем (оставляем по умолчанию красный)
