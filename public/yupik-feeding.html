@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -193,7 +194,7 @@
     </div>
     <div id="items"></div>
 
-    <button id="export-csv">Экспорт CSV</button>
+    <button id="export-csv">Экспорт</button>
 </div>
 
 
@@ -400,10 +401,9 @@
     }
 
     // Export to CSV with summary line
-    function exportToCsv() {
+    function exportToExcel() {
         const rows = [];
         rows.push([ '#', 'Wallet', 'Received buckwheat', 'YUM amount to send' ]);
-
         let sumSent = 0;
         let sumYum = 0;
 
@@ -418,28 +418,25 @@
             sumSent += sentDiv;
             sumYum += yubmDiv;
 
-            const sentCsv = sentDiv.toFixed(3).replace(/\./g, ',');
-            const yubmCsv = yubmDiv.toFixed(3).replace(/\./g, ',');
+            const sentExcel = sentDiv.toFixed(3).replace('.', ',');
+            const yubmExcel = yubmDiv.toFixed(3).replace('.', ',');
 
-            rows.push([ rank, wallet, sentCsv, yubmCsv ]);
+            rows.push([ rank, wallet, sentExcel, yubmExcel ]);
         });
 
-        // Add a summary line
-        const totalSentCsv = sumSent.toFixed(3).replace(/\./g, ',');
-        const totalYumCsv = sumYum.toFixed(3).replace(/\./g, ',');
-        rows.push([ '', 'Total', totalSentCsv, totalYumCsv ]);
+        const totalSentExcel = sumSent.toFixed(3).replace('.', ',');
+        const totalYumExcel = sumYum.toFixed(3).replace('.', ',');
+        rows.push([ '', 'Total', totalSentExcel, totalYumExcel ]);
 
-        const csvContent = rows.map(r=>r.join(';')).join('\r\n');
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `yupik_feeding_${Date.now()}.csv`;
-        link.click();
-        URL.revokeObjectURL(link.href);
+        // Создание Excel-таблицы
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+        XLSX.writeFile(wb, `yupik_feeding_${Date.now()}.xlsx`);
     }
 
     document.getElementById('apply-filter').addEventListener('click', renderBoard);
-    document.getElementById('export-csv').addEventListener('click', exportToCsv);
+    document.getElementById('export-csv').addEventListener('click', exportToExcel);
 
     window.addEventListener('DOMContentLoaded', () => {
         setTodayRange();
