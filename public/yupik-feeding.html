@@ -400,7 +400,7 @@
         }
     }
 
-    // Export to CSV with summary line
+    // Export to Exel with summary line
     function exportToExcel() {
         const rows = [];
         rows.push([ '#', 'Wallet', 'Received buckwheat', 'YUM amount to send' ]);
@@ -418,17 +418,14 @@
             sumSent += sentDiv;
             sumYum += yubmDiv;
 
-            const sentExcel = sentDiv.toFixed(3).replace('.', ',');
-            const yubmExcel = yubmDiv.toFixed(3).replace('.', ',');
-
-            rows.push([ rank, wallet, sentExcel, yubmExcel ]);
+            // Keeping the numbers as numbers!
+            rows.push([ rank, wallet, sentDiv, yubmDiv ]);
         });
 
-        const totalSentExcel = sumSent.toFixed(3).replace('.', ',');
-        const totalYumExcel = sumYum.toFixed(3).replace('.', ',');
-        rows.push([ '', 'Total', totalSentExcel, totalYumExcel ]);
+        // Totals are also numbers
+        rows.push([ '', 'Total', sumSent, sumYum ]);
 
-        // Создание Excel-таблицы
+        // Creating an Excel spreadsheet
         const ws = XLSX.utils.aoa_to_sheet(rows);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
