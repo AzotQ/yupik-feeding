@@ -246,21 +246,37 @@
 
     function setTodayRange() {
         const now = new Date();
-        const year  = now.getFullYear();
-        const month = String(now.getMonth()+1).padStart(2,'0');
-        const day   = String(now.getDate()).padStart(2,'0');
-        const todayDate = `${year}-${month}-${day}`;
-        document.getElementById('since-input').value = `${todayDate}T00:00`;
-        document.getElementById('until-input').value = `${todayDate}T23:59`;
+        // Convert the current time to UTC+3
+        const msk = new Date(now.getTime() + (3 - now.getTimezoneOffset()/60)*60*60*1000);
+        const y = msk.getUTCFullYear();
+        const m = String(msk.getUTCMonth() + 1).padStart(2, '0');
+        const d = String(msk.getUTCDate()).padStart(2, '0');
+        const today = `${y}-${m}-${d}`;
+        document.getElementById('since-input').value = today + 'T00:00';
+        document.getElementById('until-input').value = today + 'T23:59';
+    }
+
+    function parseDateLocalToUTC3(dateStr) {
+        // dateStr — in format YYYY-MM-DDTHH:mm
+        // Returns a timestamp in milliseconds for UTC+3
+        if (!dateStr) return NaN;
+        const [datePart, timePart] = dateStr.split('T');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [hour, min] = (timePart || '00:00').split(':').map(Number);
+        // We set the date as if it were in UTC+3 (!!!)
+        // Then subtract 3 hours to get the UTC timestamp.
+        const date = new Date(Date.UTC(year, month-1, day, hour-3, min));
+        return date.getTime();
     }
 
     function getFilterRange() {
         const sinceStr = document.getElementById('since-input').value;
         const untilStr = document.getElementById('until-input').value;
         return {
-            sinceStr, untilStr,
-            sinceMs: new Date(sinceStr).getTime(),
-            untilMs: new Date(untilStr).getTime()
+            sinceStr,
+            untilStr,
+            sinceMs: parseDateLocalToUTC3(sinceStr),
+            untilMs: parseDateLocalToUTC3(untilStr)
         };
     }
 
@@ -291,8 +307,8 @@
         try {
             let data = await fetchAll();
             data = data.filter(tx => {
-                const txMs = Number(tx.timestamp_nanosec)/1e6;
-                return txMs>=sinceMs && txMs<=untilMs;
+                const txMs = Number(tx.timestamp_nanosec) / 1e6;
+                return txMs >= sinceMs && txMs <= untilMs;
             });
 
             const stats = {};
