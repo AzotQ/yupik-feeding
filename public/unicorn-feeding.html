@@ -444,7 +444,7 @@
             const wallet = cols[1].textContent.trim();
             const sentRaw = parseFloat(cols[2].textContent.trim().replace(/,/g, '')) || 0;
             const sentDiv = sentRaw / 1000;
-            const yubmDiv = (sentRaw * 100) / 1000;
+            const yubmDiv = (sentRaw * 50) / 1000;
 
             sumSent += sentDiv;
             sumYum += yubmDiv;
