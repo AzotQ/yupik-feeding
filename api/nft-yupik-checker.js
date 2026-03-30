@@ -3,8 +3,11 @@ import fetch from 'node-fetch';
 
 const BASE_URL = 'https://api.sendler.xyz/history/ft-transfers/';
 const NFT_URL  = 'https://api.sendler.xyz/nft/by-owner-contract/';
-const DEFAULT_LIMIT = 100;
+const DEFAULT_LIMIT_FT = 200; // Для FT максимум 200
+const DEFAULT_LIMIT_NFT = 5000; // Для NFT максимум 5000
 const DEFAULT_SKIP  = 0;
+
+const API_KEY = 'NDS8miutL_Dr6nvxC5cWluErM5284hPwOhbrY2vX_0A';
 
 export default async function handler(req, res) {
     const {
@@ -12,18 +15,26 @@ export default async function handler(req, res) {
         symbol,
         owner_id,
         contract_address,
-        limit = DEFAULT_LIMIT,
+        limit,
         skip  = DEFAULT_SKIP
     } = req.query;
+
+    const headers = {
+        'accept': 'application/json',
+        'X-API-Key': API_KEY
+    };
 
     // 1) Проксирование запроса за NFT
     if (owner_id && contract_address) {
         const upstreamUrl = new URL(NFT_URL);
         upstreamUrl.searchParams.set('owner_id', owner_id);
         upstreamUrl.searchParams.set('contract_address', contract_address);
+        // Если лимит не передан с фронта, ставим максимальный
+        upstreamUrl.searchParams.set('limit', limit ? Number(limit) : DEFAULT_LIMIT_NFT);
+        upstreamUrl.searchParams.set('skip', Number(skip));
 
         try {
-            const upstream = await fetch(upstreamUrl.toString());
+            const upstream = await fetch(upstreamUrl.toString(), { headers });
             if (!upstream.ok) {
                 const text = await upstream.text().catch(() => '');
                 return res
@@ -48,11 +59,11 @@ export default async function handler(req, res) {
     transfersUrl.searchParams.set('wallet_id', wallet_id);
     transfersUrl.searchParams.set('direction', 'in');
     transfersUrl.searchParams.set('symbol', symbol);
-    transfersUrl.searchParams.set('limit',  Number(limit));
+    transfersUrl.searchParams.set('limit',  limit ? Number(limit) : DEFAULT_LIMIT_FT);
     transfersUrl.searchParams.set('skip',   Number(skip));
 
     try {
-        const upstream = await fetch(transfersUrl.toString());
+        const upstream = await fetch(transfersUrl.toString(), { headers });
         if (!upstream.ok) {
             const text = await upstream.text().catch(() => '');
             return res
