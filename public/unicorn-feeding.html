@@ -317,15 +317,18 @@
         try {
             let data = await fetchAll();
             data = data.filter(tx => {
-                // Новое поле даты block_timestamp. Добавляем 'Z', так как блокчейн-время в UTC
-                const txMs = new Date(tx.block_timestamp + 'Z').getTime();
+                // Отсекаем всё, что после точки (микросекунды), и добавляем 'Z' (UTC)
+                const safeTime = tx.block_timestamp.split('.')[0] + 'Z';
+                const txMs = new Date(safeTime).getTime();
                 return txMs >= sinceMs && txMs <= untilMs;
             });
 
             const stats = {};
             data.forEach(tx => {
-                const wallet = tx.sender_id; // Новое поле отправителя
-                const txMs = new Date(tx.block_timestamp + 'Z').getTime();
+                const wallet = tx.sender_id;
+                // То же самое делаем здесь для корректного подсчета времени первой транзакции
+                const safeTime = tx.block_timestamp.split('.')[0] + 'Z';
+                const txMs = new Date(safeTime).getTime();
                 const amount = parseFloat(tx.amount) / 1000 || 0;
 
                 if(!stats[wallet]) stats[wallet] = { total: 0, firstMs: txMs };
