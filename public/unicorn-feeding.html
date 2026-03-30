@@ -293,10 +293,14 @@
                 + `&symbol=${encodeURIComponent(SYMBOL)}&limit=${BATCH}&skip=${skip}`;
             const resp = await fetch(url);
             if (!resp.ok) throw new Error(`API ${resp.status}`);
-            const { transfers } = await resp.json();
-            if (!Array.isArray(transfers) || transfers.length===0) break;
-            all.push(...transfers);
-            if (transfers.length < BATCH) break;
+
+            const data = await resp.json();
+            // В новом API данные лежат в массиве items
+            const items = Array.isArray(data.items) ? data.items : [];
+
+            if (items.length === 0) break;
+            all.push(...items);
+            if (items.length < BATCH) break;
         }
         return all;
     }
@@ -313,23 +317,25 @@
         try {
             let data = await fetchAll();
             data = data.filter(tx => {
-                const txMs = Number(tx.timestamp_nanosec) / 1e6;
+                // Новое поле даты block_timestamp. Добавляем 'Z', так как блокчейн-время в UTC
+                const txMs = new Date(tx.block_timestamp + 'Z').getTime();
                 return txMs >= sinceMs && txMs <= untilMs;
             });
 
             const stats = {};
             data.forEach(tx => {
-                const wallet=tx.from;
-                const txMs=Number(tx.timestamp_nanosec)/1e6;
-                const amount=parseFloat(tx.amount)/1000||0;
-                if(!stats[wallet]) stats[wallet]={total:0,firstMs:txMs};
-                stats[wallet].total+=amount;
-                if(txMs<stats[wallet].firstMs) stats[wallet].firstMs=txMs;
+                const wallet = tx.sender_id; // Новое поле отправителя
+                const txMs = new Date(tx.block_timestamp + 'Z').getTime();
+                const amount = parseFloat(tx.amount) / 1000 || 0;
+
+                if(!stats[wallet]) stats[wallet] = { total: 0, firstMs: txMs };
+                stats[wallet].total += amount;
+                if(txMs < stats[wallet].firstMs) stats[wallet].firstMs = txMs;
             });
 
             const sorted = Object.entries(stats)
-                .map(([wallet,{total,firstMs}])=>({wallet,total,firstMs}))
-                .sort((a,b)=>a.firstMs-b.firstMs);
+                .map(([wallet, {total, firstMs}]) => ({wallet, total, firstMs}))
+                .sort((a,b) => a.firstMs - b.firstMs);
 
             if(!sorted.length){
                 container.innerHTML = `
@@ -340,33 +346,33 @@
                 return;
             }
 
-            sorted.forEach((item,i)=>{
+            sorted.forEach((item, i) => {
                 const row = document.createElement('div');
                 row.className = 'leaderboard-item';
                 row.innerHTML = `
             <div class="col-1">${i+1}</div>
             <div class="col-2">${item.wallet}</div>
-            <div class="col-3">${item.total.toLocaleString(undefined,{
+            <div class="col-3">${item.total.toLocaleString(undefined, {
                     minimumFractionDigits:3, maximumFractionDigits:3
                 })}</div>`;
                 row.dataset.wallet = item.wallet;
                 container.appendChild(row);
 
-                // Get the .col-2 DOM element to change the point color
                 const col2 = row.querySelector('.col-2');
 
-                // Run asynchronous limit check immediately
+                // Проверка лимитов (наличие нужных NFT)
                 (async () => {
                     try {
                         const resp = await fetch(
                             `${API_PATH}?owner_id=${encodeURIComponent(item.wallet)}&contract_address=yuplandshop.mintbase1.near`
                         );
                         const data = await resp.json();
-                        const tokens = Array.isArray(data.nfts) ? data.nfts : [];
+                        const tokens = Array.isArray(data.items) ? data.items : []; // Теперь items
+
                         const counts = {};
                         GROUPS.forEach(g => counts[g] = 0);
                         tokens.forEach(token => {
-                            const title = (token.metadata?.title || '').toLowerCase();
+                            const title = (token.title || '').toLowerCase(); // Теперь просто title
                             const found = GROUPS.find(g => title.includes(g));
                             if (found) counts[found]++;
                         });
@@ -377,14 +383,14 @@
                             col2.classList.add('red-dot');
                         }
                     } catch (e) {
-                        // In case of an error, do nothing (leave the default green)
+                        // console.error(e);
                     }
                 })();
 
-                row.addEventListener('click', async ()=>{
+                row.addEventListener('click', async () => {
                     let details = row.nextElementSibling;
                     if(details && details.classList.contains('nft-details')){
-                        details.style.display = details.style.display==='none'?'':'none';
+                        details.style.display = details.style.display === 'none' ? '' : 'none';
                         return;
                     }
                     try{
@@ -392,18 +398,18 @@
                             `${API_PATH}?owner_id=${encodeURIComponent(item.wallet)}&contract_address=yuplandshop.mintbase1.near`
                         );
                         const data = await resp.json();
-                        const tokens = Array.isArray(data.nfts)?data.nfts:[];
+                        const tokens = Array.isArray(data.items) ? data.items : []; // Теперь items
 
                         const counts = {};
-                        GROUPS.forEach(g=>counts[g]=0);
-                        tokens.forEach(token=>{
-                            const title=(token.metadata?.title||'').toLowerCase();
-                            const found = GROUPS.find(g=>title.includes(g));
+                        GROUPS.forEach(g => counts[g] = 0);
+                        tokens.forEach(token => {
+                            const title = (token.title || '').toLowerCase(); // Теперь просто title
+                            const found = GROUPS.find(g => title.includes(g));
                             if(found) counts[found]++;
                         });
 
                         const totalScore = Object.entries(counts)
-                            .reduce((sum,[g,c])=>sum + (COEFFS[g]||0)*c,0);
+                            .reduce((sum, [g, c]) => sum + (COEFFS[g] || 0) * c, 0);
 
                         details = document.createElement('div');
                         details.className = 'nft-details';
@@ -414,8 +420,8 @@
                         })} GRECHA):</strong>
                 <ul>
                   ${Object.entries(counts)
-                            .filter(([_,c])=>c>0)
-                            .map(([g,c])=>
+                            .filter(([_, c]) => c > 0)
+                            .map(([g, c]) =>
                                 `<li>${g}: ${c} (×${COEFFS[g]})</li>`
                             ).join('')}
                 </ul>`;
