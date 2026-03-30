@@ -7,6 +7,6 @@
   "routes": [
     { "src": "/api/(.*)",             "dest": "/api/nft-yupik-checker.js" },
     { "src": "/(.*\\.(js|css|html))", "dest": "/public/$1" },
-    { "src": "/",                     "dest": "/public/leaderboard.html" }
+    { "src": "/",                     "dest": "/public/unicorn-feeding.html" }
   ]
 }
