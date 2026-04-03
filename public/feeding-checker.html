@@ -143,6 +143,18 @@
 <script>
     const API_PATH     = '/api/grecha';
 
+    /** Upstream returns an array, { items: [] } or { nfts: [] }—we support both. */
+    function nftListFromResponse(data) {
+        if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.items)) return data.items;
+        if (data && Array.isArray(data.nfts)) return data.nfts;
+        return [];
+    }
+
+    function nftTitleLower(t) {
+        return String(t.title ?? t.metadata?.title ?? '').toLowerCase();
+    }
+
     function showResults(html){
         const modal=document.getElementById('feeding-checker');
         modal.innerHTML=html;
@@ -199,12 +211,12 @@
                 `${API_PATH}?owner_id=${encodeURIComponent(addr)}&contract_address=yuplandshop.mintbase1.near`
             );
             const data=await resp.json();
-            const tokens=Array.isArray(data.nfts)?data.nfts:[];
+            const tokens=nftListFromResponse(data);
 
             const counts={};
             GROUPS.forEach(g=>counts[g]=0);
             tokens.forEach(t=>{
-                const title=(t.metadata?.title||'').toLowerCase();
+                const title=nftTitleLower(t);
                 const found=GROUPS.find(g=>title.includes(g));
                 if(found) counts[found]++;
             });
@@ -216,6 +228,14 @@
                 .filter(([_,c])=>c>0)
                 .map(([g,c])=>`<li>${g}: ${c} (×${COEFFS[g]})</li>`)
                 .join('');
+            if (!tokens.length) {
+                showResults(`<p class="error">Ответ API без списка NFT (ожидался массив или поле items/nfts).</p>`);
+                return;
+            }
+            if (!list) {
+                showResults(`<p>На кошельке ${addr} найдено NFT: ${tokens.length}, но ни одно название не совпало с категориями единорогов.</p>`);
+                return;
+            }
             showResults(`
                     <strong>Единороги на ${addr} (max GRECHA: ${totalScore.toLocaleString(undefined,{
                 minimumFractionDigits:0,maximumFractionDigits:0
@@ -263,12 +283,12 @@
                 `${API_PATH}?owner_id=${encodeURIComponent(addr)}&contract_address=darai.mintbase1.near`
             );
             const data=await resp.json();
-            const tokens=Array.isArray(data.nfts)?data.nfts:[];
+            const tokens=nftListFromResponse(data);
 
             const counts={};
             GROUPS.forEach(g=>counts[g]=0);
             tokens.forEach(t=>{
-                const title=(t.metadata?.title||'').toLowerCase();
+                const title=nftTitleLower(t);
                 const found=GROUPS.find(g=>title.includes(g));
                 if(found) counts[found]++;
             });
@@ -280,6 +300,14 @@
                 .filter(([_,c])=>c>0)
                 .map(([g,c])=>`<li>${g}: ${c} (×${COEFFS[g]})</li>`)
                 .join('');
+            if (!tokens.length) {
+                showResults(`<p class="error">Ответ API без списка NFT (ожидался массив или поле items/nfts).</p>`);
+                return;
+            }
+            if (!list) {
+                showResults(`<p>На кошельке ${addr} найдено NFT: ${tokens.length}, но ни одно название не совпало с категориями юпиков.</p>`);
+                return;
+            }
             showResults(`
                     <strong>Юпики на ${addr} (max GRECHA: ${totalScore.toLocaleString(undefined,{
                 minimumFractionDigits:0,maximumFractionDigits:0
