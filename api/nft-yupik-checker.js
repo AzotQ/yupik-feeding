@@ -7,7 +7,7 @@ const DEFAULT_LIMIT_FT = 200; // Для FT максимум 200
 const DEFAULT_LIMIT_NFT = 5000; // Для NFT максимум 5000
 const DEFAULT_SKIP  = 0;
 
-const API_KEY = 'NDS8miutL_Dr6nvxC5cWluErM5284hPwOhbrY2vX_0A';
+const API_KEY = '';
 
 export default async function handler(req, res) {
     const {
@@ -21,7 +21,7 @@ export default async function handler(req, res) {
 
     const headers = {
         'accept': 'application/json',
-        'X-API-Key': API_KEY
+        'X-API-Key': process.env.SENDLER_API_KEY || API_KEY
     };
 
     // 1) Проксирование запроса за NFT
