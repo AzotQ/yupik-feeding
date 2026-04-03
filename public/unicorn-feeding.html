@@ -181,7 +181,7 @@
     <label>С:
         <input type="datetime-local" id="since-input" />
     </label>
-    <label>По:
+    <label>По (GMT+3):
         <input type="datetime-local" id="until-input" />
     </label>
     <button id="apply-filter">Применить</button>
@@ -206,6 +206,8 @@
     const SYMBOL       = 'GRECHA';
     const BATCH        = 200;
     const MIN_INTERVAL = 0.05 * 60 * 1000; //3sec
+    /** Fixed UTC+3 for filters (IANA: “reverse” sign, GMT-3 = UTC+3). */
+    const FILTER_TZ = 'Etc/GMT-3';
 
     const GROUPS = [
         'old unicorn',
@@ -250,29 +252,40 @@
 
     let lastFetchTime = 0;
 
-    function setTodayRange() {
-        const now = new Date();
-        // Convert the current time to UTC+3
-        const msk = new Date(now.getTime() + (3 - now.getTimezoneOffset()/60)*60*60*1000);
-        const y = msk.getUTCFullYear();
-        const m = String(msk.getUTCMonth() + 1).padStart(2, '0');
-        const d = String(msk.getUTCDate()).padStart(2, '0');
-        const today = `${y}-${m}-${d}`;
-        document.getElementById('since-input').value = today + 'T00:00';
-        document.getElementById('until-input').value = today + 'T23:59';
+    function calendarDateYMDInFilterTZ(ms = Date.now()) {
+        const fmt = new Intl.DateTimeFormat('en-CA', {
+            timeZone: FILTER_TZ,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+        const parts = fmt.formatToParts(new Date(ms));
+        const get = (type) => parts.find((p) => p.type === type).value;
+        const y = get('year');
+        const m = get('month');
+        const d = get('day');
+        return { y, m, d, isoDate: `${y}-${m}-${d}` };
     }
 
+    function setTodayRange() {
+        const { isoDate } = calendarDateYMDInFilterTZ();
+        document.getElementById('since-input').value = `${isoDate}T00:00`;
+        document.getElementById('until-input').value = `${isoDate}T23:59`;
+    }
+
+    /**
+     * A `datetime-local` string without a time zone: interpreted as the time in GMT+3.
+     * Returns a UTC timestamp (in milliseconds) that corresponds to the block_timestamp in UTC.
+     */
     function parseDateLocalToUTC3(dateStr) {
-        // dateStr — in format YYYY-MM-DDTHH:mm
-        // Returns a timestamp in milliseconds for UTC+3
         if (!dateStr) return NaN;
         const [datePart, timePart] = dateStr.split('T');
         const [year, month, day] = datePart.split('-').map(Number);
-        const [hour, min] = (timePart || '00:00').split(':').map(Number);
-        // We set the date as if it were in UTC+3 (!!!)
-        // Then subtract 3 hours to get the UTC timestamp.
-        const date = new Date(Date.UTC(year, month-1, day, hour-3, min));
-        return date.getTime();
+        const timeBits = (timePart || '00:00').split(':').map(Number);
+        const hour = timeBits[0] || 0;
+        const min = timeBits[1] || 0;
+        const sec = timeBits[2] || 0;
+        return Date.UTC(year, month - 1, day, hour - 3, min, sec, 0);
     }
 
     function getFilterRange() {
@@ -343,7 +356,7 @@
             if(!sorted.length){
                 container.innerHTML = `
             <div class="error">
-              Нет переводов в период<br>
+              Нет переводов в период (GMT+3)<br>
               ${sinceStr.replace('T',' ')} — ${untilStr.replace('T',' ')}
             </div>`;
                 return;
