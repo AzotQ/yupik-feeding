@@ -178,10 +178,13 @@
 </div>
 
 <div id="controls">
-    <label>С:
+    <p style="margin:0 0 8px;color:ivory;font-size:13px;text-shadow:0 0 4px #000;">
+        Даты и время в фильтре — календарные GMT+3 (фиксированный сдвиг).
+    </p>
+    <label>С (GMT+3):
         <input type="datetime-local" id="since-input" />
     </label>
-    <label>По:
+    <label>По (GMT+3):
         <input type="datetime-local" id="until-input" />
     </label>
     <button id="apply-filter">Применить</button>
@@ -206,6 +209,7 @@
     const SYMBOL       = 'GRECHA';
     const BATCH        = 200;
     const MIN_INTERVAL = 0.05 * 60 * 1000; //3sec
+    const FILTER_TZ = 'Etc/GMT-3';
 
     const GROUPS = [
         'common',
@@ -236,24 +240,73 @@
 
     let lastFetchTime = 0;
 
+    function calendarDateYMDInFilterTZ(ms = Date.now()) {
+        const fmt = new Intl.DateTimeFormat('en-CA', {
+            timeZone: FILTER_TZ,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+        const parts = fmt.formatToParts(new Date(ms));
+        const get = (type) => parts.find((p) => p.type === type).value;
+        return { isoDate: `${get('year')}-${get('month')}-${get('day')}` };
+    }
+
     function setTodayRange() {
-        const now = new Date();
-        const year  = now.getFullYear();
-        const month = String(now.getMonth()+1).padStart(2,'0');
-        const day   = String(now.getDate()).padStart(2,'0');
-        const todayDate = `${year}-${month}-${day}`;
-        document.getElementById('since-input').value = `${todayDate}T00:00`;
-        document.getElementById('until-input').value = `${todayDate}T23:59`;
+        const { isoDate } = calendarDateYMDInFilterTZ();
+        document.getElementById('since-input').value = `${isoDate}T00:00`;
+        document.getElementById('until-input').value = `${isoDate}T23:59`;
+    }
+
+    function parseDateLocalToUTC3(dateStr) {
+        if (!dateStr) return NaN;
+        const [datePart, timePart] = dateStr.split('T');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const timeBits = (timePart || '00:00').split(':').map(Number);
+        const hour = timeBits[0] || 0;
+        const min = timeBits[1] || 0;
+        const sec = timeBits[2] || 0;
+        return Date.UTC(year, month - 1, day, hour - 3, min, sec, 0);
     }
 
     function getFilterRange() {
         const sinceStr = document.getElementById('since-input').value;
         const untilStr = document.getElementById('until-input').value;
         return {
-            sinceStr, untilStr,
-            sinceMs: new Date(sinceStr).getTime(),
-            untilMs: new Date(untilStr).getTime()
+            sinceStr,
+            untilStr,
+            sinceMs: parseDateLocalToUTC3(sinceStr),
+            untilMs: parseDateLocalToUTC3(untilStr)
         };
+    }
+
+    function transfersFromResponse(data) {
+        if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.items)) return data.items;
+        if (data && Array.isArray(data.transfers)) return data.transfers;
+        return [];
+    }
+
+    function txTimestampMs(tx) {
+        if (tx.block_timestamp) {
+            const safeTime = tx.block_timestamp.split('.')[0] + 'Z';
+            return new Date(safeTime).getTime();
+        }
+        if (tx.timestamp_nanosec != null) {
+            return Number(tx.timestamp_nanosec) / 1e6;
+        }
+        return NaN;
+    }
+
+    function nftListFromResponse(data) {
+        if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.items)) return data.items;
+        if (data && Array.isArray(data.nfts)) return data.nfts;
+        return [];
+    }
+
+    function nftTitleLower(t) {
+        return String(t.title ?? t.metadata?.title ?? '').toLowerCase();
     }
 
     async function fetchAll() {
@@ -263,10 +316,11 @@
                 + `&symbol=${encodeURIComponent(SYMBOL)}&limit=${BATCH}&skip=${skip}`;
             const resp = await fetch(url);
             if (!resp.ok) throw new Error(`API ${resp.status}`);
-            const { transfers } = await resp.json();
-            if (!Array.isArray(transfers) || transfers.length===0) break;
-            all.push(...transfers);
-            if (transfers.length < BATCH) break;
+            const data = await resp.json();
+            const items = transfersFromResponse(data);
+            if (items.length === 0) break;
+            all.push(...items);
+            if (items.length < BATCH) break;
         }
         return all;
     }
@@ -283,15 +337,15 @@
         try {
             let data = await fetchAll();
             data = data.filter(tx => {
-                const txMs = Number(tx.timestamp_nanosec)/1e6;
-                return txMs>=sinceMs && txMs<=untilMs;
+                const txMs = txTimestampMs(tx);
+                return txMs >= sinceMs && txMs <= untilMs;
             });
 
             const stats = {};
             data.forEach(tx => {
-                const wallet=tx.from;
-                const txMs=Number(tx.timestamp_nanosec)/1e6;
-                const amount=parseFloat(tx.amount)/1000||0;
+                const wallet = tx.sender_id || tx.from;
+                const txMs = txTimestampMs(tx);
+                const amount = parseFloat(tx.amount) / 1000 || 0;
                 if(!stats[wallet]) stats[wallet]={total:0,firstMs:txMs};
                 stats[wallet].total+=amount;
                 if(txMs<stats[wallet].firstMs) stats[wallet].firstMs=txMs;
@@ -304,7 +358,7 @@
             if(!sorted.length){
                 container.innerHTML = `
             <div class="error">
-              Нет переводов в период<br>
+              Нет переводов в период (GMT+3)<br>
               ${sinceStr.replace('T',' ')} — ${untilStr.replace('T',' ')}
             </div>`;
                 return;
@@ -332,11 +386,11 @@
                             `${API_PATH}?owner_id=${encodeURIComponent(item.wallet)}&contract_address=darai.mintbase1.near`
                         );
                         const data = await resp.json();
-                        const tokens = Array.isArray(data.nfts) ? data.nfts : [];
+                        const tokens = nftListFromResponse(data);
                         const counts = {};
                         GROUPS.forEach(g => counts[g] = 0);
                         tokens.forEach(token => {
-                            const title = (token.metadata?.title || '').toLowerCase();
+                            const title = nftTitleLower(token);
                             const found = GROUPS.find(g => title.includes(g));
                             if (found) counts[found]++;
                         });
@@ -362,12 +416,12 @@
                             `${API_PATH}?owner_id=${encodeURIComponent(item.wallet)}&contract_address=darai.mintbase1.near`
                         );
                         const data = await resp.json();
-                        const tokens = Array.isArray(data.nfts)?data.nfts:[];
+                        const tokens = nftListFromResponse(data);
 
                         const counts = {};
                         GROUPS.forEach(g=>counts[g]=0);
                         tokens.forEach(token=>{
-                            const title=(token.metadata?.title||'').toLowerCase();
+                            const title=nftTitleLower(token);
                             const found = GROUPS.find(g=>title.includes(g));
                             if(found) counts[found]++;
                         });
@@ -379,7 +433,7 @@
                         details.className = 'nft-details';
                         details.style.padding = '0 5px 5px 25px';
                         details.innerHTML = `
-                <strong>Единороги на кошельке (max объём: ${totalScore.toLocaleString(undefined,{
+                <strong>Юпики на кошельке (max объём: ${totalScore.toLocaleString(undefined,{
                             minimumFractionDigits:1, maximumFractionDigits:2
                         })} GRECHA):</strong>
                 <ul>
